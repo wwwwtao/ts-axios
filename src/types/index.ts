@@ -21,10 +21,11 @@ export interface AxiosRequestConfig {
   params?: any
   headers?: any
   responseType?: XMLHttpRequestResponseType
+  timeout?: number
 }
 
 export interface AxiosResponse {
-/* 数据：any
+  /* 数据：any
   状态：number
   状态文本：string
   标题：any
@@ -38,6 +39,4 @@ export interface AxiosResponse {
   request: any
 }
 
-export interface AxiosPromise extends Promise<AxiosResponse> {
-
-}
+export interface AxiosPromise extends Promise<AxiosResponse> {}

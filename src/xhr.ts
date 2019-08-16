@@ -1,8 +1,9 @@
-import { AxiosRequestConfig, AxiosPromise,AxiosResponse } from './types'
+import { AxiosRequestConfig, AxiosPromise, AxiosResponse } from './types'
+import { parseHeaders } from './helpers/headers'
 
 export default function xhr(config: AxiosRequestConfig): AxiosPromise {
-  return new Promise((resolve) => {
-    const { data = null, url, method = 'get', headers, responseType } = config
+  return new Promise((resolve, reject) => {
+    const { data = null, url, method = 'get', headers, responseType, timeout } = config
 
     const request = new XMLHttpRequest()
 
@@ -10,16 +11,26 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
       request.responseType = responseType
     }
 
+    if (timeout) {
+      request.timeout = timeout
+    }
+
     request.open(method.toUpperCase(), url, true)
 
     //request.onreadystatechange 不断触发 为4的时候可以拿到响应的数据
     request.onreadystatechange = function handleLoad() {
-      if(request.readyState !== 4) {
+      if (request.readyState !== 4) {
         return
       }
 
-      const responseHeaders = request.getAllResponseHeaders()
-      const responseData = responseType && responseType !== 'text' ? request.response : request.responseText
+      //网络错误 超时错误
+      if (request.status === 0) {
+        return
+      }
+
+      const responseHeaders = parseHeaders(request.getAllResponseHeaders())
+      const responseData =
+        responseType && responseType !== 'text' ? request.response : request.responseText
       const response: AxiosResponse = {
         data: responseData,
         status: request.status,
@@ -28,9 +39,20 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
         config,
         request
       }
-      resolve(response)
+      handleResponse(response)
     }
 
+    //处理网络异常错误
+    request.onerror = function handleError() {
+      reject(new Error('Network Error'))
+    }
+
+    //# 处理超时错误
+    request.ontimeout = function handleTimeout() {
+      reject(new Error(`Timeout of ${timeout} ms exceeded`))
+    }
+
+    //处理请求 header
     Object.keys(headers).forEach(name => {
       if (data === null && name.toLowerCase() === 'content-type') {
         delete headers[name]
@@ -40,6 +62,14 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
     })
 
     request.send(data)
-  })
 
+    //处理非 200 状态码
+    function handleResponse(response: AxiosResponse) {
+      if (response.status >= 200 && response.status < 300) {
+        resolve(response)
+      } else {
+        reject(new Error(`Request failed with status code ${response.status}`))
+      }
+    }
+  })
 }
