@@ -1,6 +1,6 @@
-import { AxiosRequestConfig, AxiosPromise, AxiosResponse } from './types'
-import { parseHeaders } from './helpers/headers'
-import { createError } from './helpers/error'
+import { AxiosRequestConfig, AxiosPromise, AxiosResponse } from '../types'
+import { parseHeaders } from '../helpers/headers'
+import { createError } from '../helpers/error'
 import { ECONNABORTED } from 'constants'
 
 export default function xhr(config: AxiosRequestConfig): AxiosPromise {
@@ -17,15 +17,15 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
       request.timeout = timeout
     }
 
-    request.open(method.toUpperCase(), url, true)
+    request.open(method.toUpperCase(), url!, true)
 
-    //request.onreadystatechange 不断触发 为4的时候可以拿到响应的数据
+    /* //request.onreadystatechange 不断触发 为4的时候可以拿到响应的数据 */
     request.onreadystatechange = function handleLoad() {
       if (request.readyState !== 4) {
         return
       }
 
-      //网络错误 超时错误
+      /* //网络错误 超时错误 */
       if (request.status === 0) {
         return
       }
@@ -44,17 +44,17 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
       handleResponse(response)
     }
 
-    //处理网络异常错误
+    /* //处理网络异常错误 */
     request.onerror = function handleError() {
       reject(createError('Network Error', config, null, request))
     }
 
-    //# 处理超时错误
+    /* //# 处理超时错误 */
     request.ontimeout = function handleTimeout() {
       reject(createError(`Timeout of ${timeout} ms exceeded`, config, 'ECONNABORTED', request))
     }
 
-    //处理请求 header
+    /* //处理请求 header */
     Object.keys(headers).forEach(name => {
       if (data === null && name.toLowerCase() === 'content-type') {
         delete headers[name]
@@ -65,7 +65,7 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
 
     request.send(data)
 
-    //处理非 200 状态码
+    /* //处理非 200 状态码 */
     function handleResponse(response: AxiosResponse) {
       if (response.status >= 200 && response.status < 300) {
         resolve(response)
