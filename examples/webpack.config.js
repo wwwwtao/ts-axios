@@ -13,7 +13,7 @@ module.exports = {
    * entries 收集了多目录个入口文件，并且每个入口还引入了一个用于热更新的文件
    * entries 是一个对象，key 为目录名
    */
-  entry: fs.readdirSync(__dirname).reduce((entries, dir) => { //多入口配置 暂时看不懂
+  entry: fs.readdirSync(__dirname).reduce((entries, dir) => {
     const fullDir = path.join(__dirname, dir)
     const entry = path.join(fullDir, 'app.ts')
     if (fs.statSync(fullDir).isDirectory() && fs.existsSync(entry)) {
@@ -37,7 +37,7 @@ module.exports = {
       {
         test: /\.ts$/,
         enforce: 'pre',
-        use: [  //use loader一般都是对文件做转换
+        use: [
           {
             loader: 'tslint-loader'
           }
@@ -53,15 +53,21 @@ module.exports = {
             }
           }
         ]
+      },
+      {
+        test: /\.css$/,
+        use: [
+          'style-loader', 'css-loader'
+        ]
       }
     ]
   },
 
-  resolve: { //默认解析文件后缀名
+  resolve: {
     extensions: ['.ts', '.tsx', '.js']
   },
 
-  plugins: [ //热更新 派发错误得插件
+  plugins: [
     new webpack.HotModuleReplacementPlugin(),
     new webpack.NoEmitOnErrorsPlugin()
   ]
