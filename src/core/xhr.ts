@@ -1,11 +1,23 @@
 import { AxiosRequestConfig, AxiosPromise, AxiosResponse } from '../types'
 import { parseHeaders } from '../helpers/headers'
 import { createError } from '../helpers/error'
-import { ECONNABORTED } from 'constants'
+import { isURLSameOrigin } from '../helpers/url'
+import cookie from '../helpers/cookie'
 
 export default function xhr(config: AxiosRequestConfig): AxiosPromise {
   return new Promise((resolve, reject) => {
-    const { data = null, url, method = 'get', headers, responseType, timeout, cancelToken } = config
+    const {
+      data = null,
+      url,
+      method = 'get',
+      headers,
+      responseType,
+      timeout,
+      cancelToken,
+      withCredentials,
+      xsrfCookieName,
+      xsrfHeaderName
+    } = config
 
     const request = new XMLHttpRequest()
 
@@ -15,6 +27,10 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
 
     if (timeout) {
       request.timeout = timeout
+    }
+
+    if (withCredentials) {
+      request.withCredentials = withCredentials
     }
 
     request.open(method.toUpperCase(), url!, true)
@@ -54,6 +70,13 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
       reject(createError(`Timeout of ${timeout} ms exceeded`, config, 'ECONNABORTED', request))
     }
 
+    if ((withCredentials || isURLSameOrigin(url!)) && xsrfCookieName) {
+      const xsrfValue = cookie.read(xsrfCookieName)
+      if (xsrfValue && xsrfHeaderName) {
+        headers[xsrfHeaderName!] = xsrfValue
+      }
+    }
+
     /* //处理请求 header */
     Object.keys(headers).forEach(name => {
       if (data === null && name.toLowerCase() === 'content-type') {
@@ -65,6 +88,7 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
 
     /* 取消请求 */
     if (cancelToken) {
+      // tslint:disable-next-line: no-floating-promises
       cancelToken.promise.then(reason => {
         request.abort()
         reject(reason)
