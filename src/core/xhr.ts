@@ -19,7 +19,9 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
       xsrfCookieName,
       xsrfHeaderName,
       onDownloadProgress,
-      onUploadProgress
+      onUploadProgress,
+      auth,
+      validateStatus
     } = config
 
     /* 创建一个 request 实例。
@@ -114,6 +116,10 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
           headers[xsrfHeaderName!] = xsrfValue
         }
       }
+      // http授权
+      if (auth) {
+        headers['Authorization'] = 'Basic ' + btoa(auth.username + ':' + auth.password)
+      }
 
       /* //处理请求 header */
       Object.keys(headers).forEach(name => {
@@ -137,8 +143,9 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
     }
 
     /* //处理非 200 状态码 */
+    // 如果没有配置 validateStatus 以及 validateStatus 函数返回的值为 true 的时候，都认为是合法的，正常 resolve(response)，否则都创建一个错误
     function handleResponse(response: AxiosResponse) {
-      if (response.status >= 200 && response.status < 300) {
+      if (!validateStatus || validateStatus(response.status)) {
         resolve(response)
       } else {
         reject(
